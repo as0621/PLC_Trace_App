@@ -8,7 +8,7 @@ import tkinter as tk
 
 
 class Controller:
-    VERSION = "0.0.1"
+    VERSION = "1.0.0"
     SOURCE_COLUMNS = ['Header',
                       'Date',
                       'Time',

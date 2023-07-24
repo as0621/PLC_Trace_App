@@ -12,7 +12,7 @@ import threading
 
 class View:
     # Constants
-    VERSION = "0.0.1"
+    VERSION = "1.0.0"
     APP_TITLE = "PLC Trace App"
     APP_SIZE = "800x400"
 
@@ -53,7 +53,7 @@ class MainFrame(tk.Frame):
         self.execute_frame = ExecuteFrame(self)
 
         # HI KEVIN
-        ttk.Label(text='Welcome back.. KEVIN!').pack(side='top')
+        ttk.Label(text='Welcome back.. KEVIN!', font=('Arial', '36')).pack(side='top')
         self.source_file_frame.pack(side='top')
         ttk.Separator(self, orient='horizontal').pack(side='top')
 

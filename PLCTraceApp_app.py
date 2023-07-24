@@ -9,7 +9,7 @@ from PLCTraceApp_controller import Controller
 
 class App:
     # Constants
-    VERSION = "0.0.1"
+    VERSION = "1.0.0"
 
     def __init__(self):
         self.model = self.initialize_model()
