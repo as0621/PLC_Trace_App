@@ -89,7 +89,7 @@ class FileFrame(tk.Frame):
         return ttk.Button(self, text='Select filepath...', command=self.open_directory_selector)
 
     def open_directory_selector(self):
-        filepath = filedialog.askdirectory()
+        filepath = filedialog.askopenfilename(filetypes=[('CSV Files (.csv)', '*.csv')])
         self.filepath_var.set(filepath)
 
 

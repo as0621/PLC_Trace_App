@@ -2,9 +2,6 @@
 # Aldo Siswanto
 # 2023/07/08
 
-import tkinter as tk
-
-
 class Model:
     VERSION = "0.0.1"
 
