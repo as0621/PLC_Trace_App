@@ -16,33 +16,34 @@ class View:
     APP_TITLE = "PLC Trace App"
     APP_SIZE = "800x400"
 
-    def __init__(self, model):
+    def __init__(self, model, controller):
         root = tk.Tk()
         root.title(View.APP_TITLE)
         root.geometry(View.APP_SIZE)
 
-        MainFrame(root, model).pack(side='top')
+        MainFrame(root, model, controller).pack(side='top')
         root.mainloop()
 
 
 class StringVarModel(tk.StringVar):
-    def __init__(self, model_var, *args, **kwargs):
+    def __init__(self, model, model_var, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
+        self.model = model
         self.model_var = model_var
 
     def set(self, value: str) -> None:
-        self.model_var = value
+        setattr(self.model, self.model_var, value)
         super().set(value)
 
     def get(self) -> str:
-        super().set(self.model_var)
+        super().set(getattr(self.model, self.model_var))
         return super().get()
 
 
 class MainFrame(tk.Frame):
-    def __init__(self, parent, model):
+    def __init__(self, parent, model, controller):
         tk.Frame.__init__(self, parent)
+        self.controller = controller
         self.parent = parent
         self.model = model
 
@@ -51,6 +52,8 @@ class MainFrame(tk.Frame):
         self.results_file_frame = ResultsFileFrame(self)
         self.execute_frame = ExecuteFrame(self)
 
+        # HI KEVIN
+        ttk.Label(text='Welcome back.. KEVIN!').pack(side='top')
         self.source_file_frame.pack(side='top')
         ttk.Separator(self, orient='horizontal').pack(side='top')
 
@@ -69,7 +72,8 @@ class FileFrame(tk.Frame):
         self.parent = parent
         self.config = config
 
-        self.filepath_var = tk.StringVar(model_filepath)
+        self.filepath_var = StringVarModel(parent.model, model_filepath)
+        self.parent.model.source_filepath = 'not hi'
 
         self.title = self.create_title()
         self.label = self.create_label()
@@ -95,27 +99,42 @@ class FileFrame(tk.Frame):
 
 class SourceFileFrame(FileFrame):
     def __init__(self, parent):
-        super().__init__(parent, "SOURCE", parent.model.source_filepath)
+        super().__init__(parent, "SOURCE", 'source_filepath')
 
 
 class HistoryFileFrame(FileFrame):
     def __init__(self, parent):
-        super().__init__(parent, "HISTORY", parent.model.history_filepath)
+        super().__init__(parent, "HISTORY", 'history_filepath')
 
 
 class ResultsFileFrame(FileFrame):
     def __init__(self, parent):
-        super().__init__(parent, "RESULTS", parent.model.results_filepath)
+        super().__init__(parent, "RESULTS", 'results_filepath')
+
+    def open_directory_selector(self):
+        filepath = filedialog.askopenfilename(filetypes=[('Excel Files (.xlsx)', '*.xlsx')])
+        self.filepath_var.set(filepath)
+
 
 
 class ExecuteFrame(tk.Frame):
     def __init__(self, parent):
         tk.Frame.__init__(self, parent)
         self.parent = parent
+        self.status_var = StringVarModel(parent.model, 'status')
 
         self.execute_button = self.create_execute_button()
+        self.status_label = self.create_status_label()
 
         self.execute_button.pack(side='top')
+        self.status_label.pack(side='top')
 
     def create_execute_button(self):
-        return ttk.Button(self, text='Execute')
+        return ttk.Button(self, text='Execute', command=self.execute_cmd)
+
+    def create_status_label(self):
+        return ttk.Label(self, textvariable=self.status_var)
+
+    def execute_cmd(self):
+        thread = threading.Thread(target=self.parent.controller.process_data, args=(self.status_var, ))
+        thread.start()

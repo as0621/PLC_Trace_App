@@ -4,7 +4,7 @@
 
 import pandas as pd
 from win32com import client
-import os
+import tkinter as tk
 
 
 class Controller:
@@ -29,31 +29,37 @@ class Controller:
 
     def __init__(self, model):
         self.model = model
-        self.source_filepath = model.source_filepath
-        self.history_filepath = model.history_filepath
-        self.results_filepath = model.results_filepath
+        # self.source_filepath = model.source_filepath
+        # self.history_filepath = model.history_filepath
+        # self.results_filepath = model.results_filepath
 
-    def process_data(self):
-        history_df = self.history_load()
+    def process_data(self, status_var: tk.StringVar):
+        status_var.set('Loading History File...')
+        history_df = self.history_load(self.model.history_filepath)
 
-        if not history_df['Files'].str.contains(self.source_filepath):
-            new_df = self.process_sourcepath()
-            self.process_resultspath(new_df)
-            self.history_update(history_df, self.source_filepath)
+        status_var.set('Checking History File...')
+        if not history_df['Files'].str.contains(self.model.source_filepath).any():
+            status_var.set('New File! Processing Source File...')
+            new_df = self.process_sourcepath(self.model.source_filepath)
+            status_var.set('Appending Results File...')
+            self.process_resultspath(new_df, self.model.results_filepath)
+            status_var.set('Updating History File...')
+            self.history_update(history_df, self.model.source_filepath, self.model.history_filepath)
+            status_var.set('Done!')
         else:
+            status_var.set('ERROR: File has been previously processed')
             raise Exception("File has been previously processed")
 
-    def history_load(self):
-        return pd.read_csv(self.history_filepath)
-    def history_update(self, history_df, new_filepath):
-        head, tail = os.path.split(new_filepath)
+    def history_load(self, filepath):
+        return pd.read_csv(filepath)
 
-        history_df.loc[len(history_df.index)] = tail
-        history_df.to_csv(self.history_filepath, index=False)
+    def history_update(self, history_df, new_filepath, history_filepath):
+        history_df.loc[len(history_df.index)] = new_filepath
+        history_df.to_csv(history_filepath, index=False)
 
-    def process_resultspath(self, new_df):
-        appended_df = self.results_append_df(self.results_filepath, new_df)
-        self.results_write_excel(self.results_filepath, Controller.RESULTS_SHEETNAME, appended_df)
+    def process_resultspath(self, new_df, filepath):
+        appended_df = self.results_append_df(filepath, new_df)
+        self.results_write_excel(filepath, Controller.RESULTS_SHEETNAME, appended_df)
 
     def results_append_df(self, results_filepath, new_df):
         old_df = pd.read_excel(results_filepath, sheet_name=Controller.RESULTS_SHEETNAME, index_col=0)
@@ -80,10 +86,10 @@ class Controller:
         wb.Save()  # Save our work
         excel_app.Quit()  # End the Excel instance
 
-    def process_sourcepath(self):
+    def process_sourcepath(self, filepath):
         df_summary = pd.DataFrame()
 
-        temp_df = self.sourcepath_load(self.source_filepath)
+        temp_df = self.sourcepath_load(filepath)
 
         for col_name in Controller.SOURCE_COLUMNS[Controller.SOURCE_DATA_COLUMNS_INDEX:]:
             df_summary = self.sourcepath_add_col(temp_df, col_name, df_summary)

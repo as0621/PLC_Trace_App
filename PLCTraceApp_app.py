@@ -4,6 +4,7 @@
 
 from PLCTraceApp_view import View
 from PLCTraceApp_model import Model
+from PLCTraceApp_controller import Controller
 
 
 class App:
@@ -12,7 +13,7 @@ class App:
 
     def __init__(self):
         self.model = self.initialize_model()
-        self.controller = None
+        self.controller = self.initialize_controller()
         self.view = self.initialize_view()
 
         # self.initialize_controller()
@@ -20,5 +21,8 @@ class App:
     def initialize_model(self):
         return Model()
 
+    def initialize_controller(self):
+        return Controller(self.model)
+
     def initialize_view(self):
-        return View(self.model)
+        return View(self.model, self.controller)
