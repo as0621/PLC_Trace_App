@@ -8,7 +8,7 @@ import tkinter as tk
 
 
 class Controller:
-    VERSION = "1.0.0"
+    VERSION = "1.0.1"
     SOURCE_COLUMNS = ['Header',
                       'Date',
                       'Time',
@@ -29,26 +29,28 @@ class Controller:
 
     def __init__(self, model):
         self.model = model
-        # self.source_filepath = model.source_filepath
-        # self.history_filepath = model.history_filepath
-        # self.results_filepath = model.results_filepath
 
     def process_data(self, status_var: tk.StringVar):
-        status_var.set('Loading History File...')
-        history_df = self.history_load(self.model.history_filepath)
+        try:
+            status_var.set('Loading History File...')
+            history_df = self.history_load(self.model.history_filepath)
 
-        status_var.set('Checking History File...')
-        if not history_df['Files'].str.contains(self.model.source_filepath).any():
-            status_var.set('New File! Processing Source File...')
-            new_df = self.process_sourcepath(self.model.source_filepath)
-            status_var.set('Appending Results File...')
-            self.process_resultspath(new_df, self.model.results_filepath)
-            status_var.set('Updating History File...')
-            self.history_update(history_df, self.model.source_filepath, self.model.history_filepath)
-            status_var.set('Done!')
-        else:
-            status_var.set('ERROR: File has been previously processed')
-            raise Exception("File has been previously processed")
+            status_var.set('Checking History File...')
+            if not history_df['Files'].str.contains(self.model.source_filepath).any():
+                status_var.set('New File! Processing Source File...')
+                new_df = self.process_sourcepath(self.model.source_filepath, status_var)
+                status_var.set('Appending Results File...')
+                self.process_resultspath(new_df, self.model.results_filepath, status_var)
+                status_var.set('Updating History File...')
+                self.history_update(history_df, self.model.source_filepath, self.model.history_filepath)
+                status_var.set('Done!')
+            else:
+                status_var.set('ERROR: File has been previously processed')
+                raise Exception("File has been previously processed")
+
+        except Exception as e:
+            status_var.set(f'ERROR: {e}')
+            raise Exception(e)
 
     def history_load(self, filepath):
         return pd.read_csv(filepath)
@@ -57,8 +59,10 @@ class Controller:
         history_df.loc[len(history_df.index)] = new_filepath
         history_df.to_csv(history_filepath, index=False)
 
-    def process_resultspath(self, new_df, filepath):
+    def process_resultspath(self, new_df, filepath, status_var):
+        status_var.set('Appending new df..')
         appended_df = self.results_append_df(filepath, new_df)
+        status_var.set('Writing excel..')
         self.results_write_excel(filepath, Controller.RESULTS_SHEETNAME, appended_df)
 
     def results_append_df(self, results_filepath, new_df):
@@ -77,8 +81,7 @@ class Controller:
         excel_app = client.gencache.EnsureDispatch("Excel.Application")  # Initialize instance
         # excel_app = client.Dispatch("Excel.Application")
         # excel_app.Visible = False
-        wb = excel_app.Workbooks.Open(
-            r'C:\Users\as0621\OneDrive - Dexcom\Projects\SW Projects\230721 Kevin App\Ax_High_Analysis.xlsx')  # Load your (formatted) template workbook
+        wb = excel_app.Workbooks.Open(filename)  # Load your (formatted) template workbook
         ws = wb.Worksheets(sheetname)  # First worksheet becomes active - you could also refer to a sheet by name
         ws.Application.Goto(ws.Range("A1"),
                             True)  # Only select a single cell using Excel nomenclature, otherwise this breaks
@@ -86,14 +89,18 @@ class Controller:
         wb.Save()  # Save our work
         excel_app.Quit()  # End the Excel instance
 
-    def process_sourcepath(self, filepath):
+    def process_sourcepath(self, filepath, status_var):
         df_summary = pd.DataFrame()
 
+        status_var.set('Loading CSV File..')
         temp_df = self.sourcepath_load(filepath)
 
+
         for col_name in Controller.SOURCE_COLUMNS[Controller.SOURCE_DATA_COLUMNS_INDEX:]:
+            status_var.set(f'Processing {col_name}..')
             df_summary = self.sourcepath_add_col(temp_df, col_name, df_summary)
 
+        status_var.set('Adding Total Columns..')
         self.sourcepath_add_totals(df_summary)
 
         return df_summary
