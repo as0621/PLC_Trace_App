@@ -8,7 +8,7 @@ import tkinter as tk
 
 
 class Controller:
-    VERSION = "1.0.1"
+    VERSION = "1.0.3"
     SOURCE_COLUMNS = ['Header',
                       'Date',
                       'Time',
@@ -119,7 +119,7 @@ class Controller:
 
         # groupby
         temp_df = temp_df.groupby(temp_df).count()
-        temp_df = temp_df[temp_df > 1].reset_index(drop=True)
+        temp_df = temp_df[temp_df > 2].reset_index(drop=True) #v1.0.2 bugfix
 
         # bugfix v1.0.2 - Multiply each second measurement by 10 to match bin
         temp_df = temp_df.multiply(10)
