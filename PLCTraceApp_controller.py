@@ -87,7 +87,7 @@ class Controller:
                             True)  # Only select a single cell using Excel nomenclature, otherwise this breaks
         ws.PasteSpecial(Format='Unicode Text')  # Paste as text
         wb.Save()  # Save our work
-        excel_app.Quit()  # End the Excel instance
+        wb.Close()  # bugfix v1.0.2 close only workbook
 
     def process_sourcepath(self, filepath, status_var):
         df_summary = pd.DataFrame()
@@ -120,6 +120,9 @@ class Controller:
         # groupby
         temp_df = temp_df.groupby(temp_df).count()
         temp_df = temp_df[temp_df > 1].reset_index(drop=True)
+
+        # bugfix v1.0.2 - Multiply each second measurement by 10 to match bin
+        temp_df = temp_df.multiply(10)
 
         # Binning
         bins = pd.cut(x=temp_df, bins=Controller.SOURCE_BINS)
